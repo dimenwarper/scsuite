@@ -7,7 +7,9 @@ def top_level_command():
                 'split': commands.SplitCommand(),
                 'score': commands.ScoreCommand(),
                 'recommend-model': commands.ModelRecommendationCommand(),
-                'fit': commands.FitCommand()}
+                'fit': commands.FitCommand(),
+                'scran': commands.SCRANCommand(),
+                'm3drop': commands.M3DropCommand()}
 
     parser = argparse.ArgumentParser(prog='CMD', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     subparsers = parser.add_subparsers(help='sub-command helps')

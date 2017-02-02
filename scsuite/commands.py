@@ -1,15 +1,15 @@
+import argparse
+import os
+import numpy as np
+import pandas as pd
+import json
+
 from . import config
 from . import jobs
 from . import utils
 from . import instyaml
 from . import logging
 from . import atlas
-
-import argparse
-import os
-import numpy as np
-import pandas as pd
-
 
 class Command(object):
 
@@ -124,22 +124,55 @@ class ScoreCommand(Command):
         samples_df = pd.read_csv(clargs.samples_tsv, sep='\t', index_col=0)
         scores = cell_atlas.score(samples_df)
         if clargs.output_type == 'json':
-            logging.result(scores.to_json(orient='index'))
+            logging.result(json.dumps(scores.to_dict(orient='index'), 
+                                      indent=4, separators=(',', ': ')))
         if clargs.output_type == 'tsv':
             logging.result(scores.to_csv(sep='\t'))
+
+class SCRANCommand(Command):
+
+    def setup_clparser(self, parser):
+        parser.add_argument('fname')
+        parser.add_argument('--sizes', default='"c(20, 40, 60, 80, 100)"')
+        parser.add_argument('--cluster-min-size', default='200')
+        parser.add_argument('--transpose', action='store_false', default=True)
+        parser.add_argument('--do-cluster', action='store_true', default=False)
+        parser.add_argument('--positive', action='store_true', default=False)
+
+        return parser
+
+    def execute(self, clargs):
+        kws = ['fname', 'transpose', 'do_cluster', 'sizes', 'cluster_min_size', 'positive']
+        cmdargs = {kw: clargs.__dict__[kw] for kw in kws}
+        os.system('scran.R %(fname)s %(transpose)s %(do_cluster)s %(sizes)s %(cluster_min_size)s %(positive)s' % cmdargs)
+
+class M3DropCommand(Command):
+
+    def setup_clparser(self, parser):
+        parser.add_argument('fname')
+        parser.add_argument('--transpose', action='store_false', default=True)
+
+        return parser
+
+    def execute(self, clargs):
+        kws = ['fname', 'transpose']
+        cmdargs = {kw: clargs.__dict__[kw] for kw in kws}
+        os.system('m3drop.R %(fname)s %(transpose)s' % cmdargs)
+
+
 
 class StartCommand(Command):
 
     def setup_clparser(self, parser):
-        parser.add_argument('projectname', type=str)
+        parser.add_argument('project_name', type=str)
         return parser
 
     def execute(self, clargs):
-        if os.path.exists(clargs.projectname):
-            raise OSError('Path %s already exists' % clargs.projectname)
+        if os.path.exists(clargs.project_name):
+            raise OSError('Path %s already exists' % clargs.project_name)
         else:
-            os.mkdir(clargs.projectname)
-            os.mkdir('%s/data' % clargs.projectname)
+            os.mkdir(clargs.project_name)
+            os.mkdir('%s/data' % clargs.project_name)
             
             config_dict = dict(data='./data/mydata.tsv', 
                                data_dir='./data/',
@@ -148,4 +181,4 @@ class StartCommand(Command):
                                                                                  'params':{}})}),
                                model_recommendation=dict(strategy={'class': 'scsuite.model_recommendation.PrincipalTopologyModelRecommendation',
                                                               'params': {}}))
-            instyaml.dump(config_dict, open('%s/config.yaml' % clargs.projectname, 'w'))
+            instyaml.dump(config_dict, open('%s/config.yaml' % clargs.project_name, 'w'))

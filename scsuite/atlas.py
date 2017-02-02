@@ -39,6 +39,7 @@ class CellAtlas(object):
             model_scores_df = model.score(X)
             model_scores_df['model'] = pd.Series([name]*model_scores_df.shape[0])
             scores_df = scores_df.append(model_scores_df)
+        scores_df = scores_df.reset_index(drop=True)
         return scores_df
 
     def coordinates(self, with_annotations=True):

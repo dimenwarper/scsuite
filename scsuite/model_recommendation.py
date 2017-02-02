@@ -41,8 +41,8 @@ class PrincipalTopologyModelRecommendation(ModelRecommendationStrategy):
             G = nx.Graph(distance_matrix)
             T = nx.minimum_spanning_tree(G)
             if nx.diameter(T) >= int(0.8 * len(T)):
-                logging.debug('Recommending models.SCIMITARCellPopModel')
-                return models.SCIMITARCellPopModel, {}
+                logging.debug('Recommending models.CurveSCIMITARCellPopModel')
+                return models.CurveSCIMITARCellPopModel, {}
             else:
                 logging.debug('Recommending models.BranchingSCIMITARCellPopModel')
                 return models.BranchingSCIMITARCellPopModel, {}
