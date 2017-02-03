@@ -1,6 +1,4 @@
 from sklearn.cluster import DBSCAN
-from . import representations
-from . import utils
 
 
 class CellTypeSplitter(object):
@@ -21,19 +19,13 @@ class CellTypeSplitter(object):
 
 class DensitySplitter(CellTypeSplitter):
 
-    def __init__(self, clustering_method='dbscan', 
-                 representation=representations.IdentityCellRepresentation()):
-        self._representation = representation
+    def __init__(self, clustering_method='dbscan'):
         if clustering_method == 'dbscan':
             self._clustering_method = DBSCAN(eps=3, algorithm='kd_tree')
 
     def fit(self, X):
-        self._transformed = self._representation.fit_transform(X)
+        pass
 
     def predict(self, X):
-        labels = self._clustering_method.fit_predict(self._transformed)
-
-        import matplotlib.pyplot as plt
-        plt.scatter(self._transformed[:, 0], self._transformed[:, 1], alpha=0.6, color=utils.get_color(labels))
-        plt.show()
+        labels = self._clustering_method.fit_predict(X)
         return labels

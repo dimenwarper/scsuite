@@ -1,4 +1,4 @@
-from sklearn.manifold import TSNE
+from sklearn.manifold import TSNE, SpectralEmbedding
 from sklearn.decomposition import PCA
 
 
@@ -25,11 +25,15 @@ class IdentityCellRepresentation(CellRepresentation):
 
 
 class SpectralNLECellRepresentation(CellRepresentation):
+
+
+    embedding_aliases = {'tsne': TSNE, 'diffusion-map': SpectralEmbedding}
     
-    def __init__(self, n_components=2, n_pca_dims=50, nle=TSNE):
+    def __init__(self, n_components=2, n_pca_dims=10, nles=['tsne', 'diffusion-map']):
+        self.name = nles
         self.n_components = n_components
 
-        self._nle = nle(n_components=self.n_components)
+        self._nles = [SpectralNLECellRepresentation.embedding_aliases[nle](n_components=self.n_components) for nle in nles]
         self._pca = PCA(n_components=n_pca_dims)
 
     def fit(self, X):
@@ -37,6 +41,4 @@ class SpectralNLECellRepresentation(CellRepresentation):
 
     def transform(self, X):
         pca_loadings = self._pca.transform(X)
-        return self._nle.fit_transform(pca_loadings)
-        
-
+        return [nle.fit_transform(pca_loadings) for nle in self._nles]

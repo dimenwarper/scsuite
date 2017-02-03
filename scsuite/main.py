@@ -4,6 +4,7 @@ from . import commands
 
 def top_level_command():
     COMMANDS = {'start': commands.StartCommand(),
+                'represent': commands.RepresentCommand(),
                 'split': commands.SplitCommand(),
                 'score': commands.ScoreCommand(),
                 'recommend-model': commands.ModelRecommendationCommand(),

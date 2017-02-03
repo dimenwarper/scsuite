@@ -10,6 +10,7 @@ from . import utils
 from . import instyaml
 from . import logging
 from . import atlas
+from . import representations
 
 class Command(object):
 
@@ -19,6 +20,51 @@ class Command(object):
     def execute(self, clargs):
         raise NotImplementedError('Command.execute not implemented')
 
+class RepresentCommand(Command):
+
+    def setup_clparser(self, parser):
+        parser.add_argument('--data', type=str, default=None)
+        parser.add_argument('--representations', nargs='+', type=str, default=['tsne', 'diffusion-map'])
+        parser.add_argument('--npcs', type=int, default=10)
+        parser.add_argument('--ndims', type=int, default=2)
+        return parser
+
+    def execute(self, clargs):
+        general_config = config.load()
+        if 'representations' in general_config:
+            reprs_config = general_config['representations']
+            reprs_kwargs = utils.to_kwargs(reprs_config['method']['params'])
+            reprs = reprs_config['method']['class'](**reprs_kwargs)
+        else:
+            reprs = representations.SpectralNLECellRepresentation(n_components=clargs.ndims,
+                                                                  n_pca_dims=clargs.npcs,
+                                                                  nles=clargs.representations)
+
+        if clargs.data is None:
+            data_df = pd.read_csv(general_config['data'], sep='\t', index_col=0)
+        else:
+            data_df = pd.read_csv(clargs.data, sep='\t', index_col=0)
+
+        logging.info('Computing representation  %s.%s' % (reprs.__module__,
+                                                          reprs.__class__.__name__))
+        transformed = reprs.fit_transform(data_df)
+        if type(reprs.name) == list:
+            names = reprs.name
+            txs = transformed
+        else:
+            names = [reprs.name]
+            txs = [transformed]
+       
+        dir = 'representations'
+        if not os.path.exists(dir):
+            os.mkdir(dir)
+
+        for name, tx in zip(names, txs):
+            with open('%s/%s.tsv' % (dir, name), 'w') as outfile:
+                outfile.write('Sample\t%s\n' % '\t'.join(['V%s' % j for j in range(tx.shape[1])]))
+                for i in range(data_df.shape[0]):
+                    outfile.write('%s\t%s\n' % (data_df.index[i], '\t'.join([str(f) for f in tx[i, :]])))
+                
 
 class SplitCommand(Command):
 
@@ -30,7 +76,10 @@ class SplitCommand(Command):
         split_config = general_config['split']
         model_recommendation_config = general_config['model_recommendation']
 
-        data_df = pd.read_csv(general_config['data'], sep='\t', index_col=0)
+        if 'data' in split_config:
+            data_df = pd.read_csv(split_config['data'], sep='\t', index_col=0)
+        else:
+            data_df = pd.read_csv(general_config['data'], sep='\t', index_col=0)
         split_kwargs = utils.to_kwargs(split_config['method']['params'])
         splitter = split_config['method']['class'](**split_kwargs)
 
@@ -174,11 +223,17 @@ class StartCommand(Command):
             os.mkdir(clargs.project_name)
             os.mkdir('%s/data' % clargs.project_name)
             
-            config_dict = dict(data='./data/mydata.tsv', 
+            config_dict = dict(data='./data/data.tsv', 
                                data_dir='./data/',
-                               split=dict(method={'class': 'scsuite.split.DensitySplitter', 
-                                                  'params': dict(representation={'class': 'scsuite.representations.SpectralNLECellRepresentation',
-                                                                                 'params':{}})}),
+                               representations=dict(method={'class':'scsuite.representations.SpectralNLECellRepresentation',
+                                                            'params':{}
+                                                            }),
+                               split=dict(data='./representations/tsne.tsv',
+                                          method={'class': 'scsuite.split.DensitySplitter', 
+                                                  'params': {}
+                                                  }),
                                model_recommendation=dict(strategy={'class': 'scsuite.model_recommendation.PrincipalTopologyModelRecommendation',
-                                                              'params': {}}))
+                                                              'params': {}
+                                                              })
+                               )
             instyaml.dump(config_dict, open('%s/config.yaml' % clargs.project_name, 'w'))
