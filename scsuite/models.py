@@ -3,7 +3,6 @@ import pandas as pd
 import json
 import scipy.stats
 from scimitar.morphing_mixture import MorphingGaussianMixture
-from scimitar.branching import BranchingMorphingMixture
 
 
 class CellPopulationModel(object):
