@@ -17,4 +17,4 @@ setup(name='scsuite',
                         'matplotlib', 'pandas', 'seaborn', 'pyaml', 'colorama']
       )
 print 'Installing some required R packages'
-os.system('R CMD BATCH install-packages.R')
+#os.system('R CMD BATCH install-packages.R')
